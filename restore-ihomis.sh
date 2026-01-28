@@ -7,11 +7,15 @@ echo "======================================"
 
 # === CONFIG ===
 BASE_DIR="/opt/ihomis"
-IMAGE="yourdockerhub/ihomis-app:php7.4"
+IMAGE="christianbangoy2017/ihomis-app:php7.4"
 DB_NAME="hospital_dbo"
 DB_USER="doh"
 DB_PASS="doh123456"
-SQL_FILE="hospital_dbo_seed.sql"
+#SQL_FILE="hospital_dbo_seed.sql"
+
+SEED_ARCHIVE="db/hospital_dbo_seed.zip"
+SEED_SQL="/tmp/hospital_dbo_seed.sql"
+
 
 # === CHECKS ===
 command -v docker >/dev/null 2>&1 || {
@@ -56,10 +60,16 @@ docker compose up -d
 echo "[5/7] Waiting for MySQL to initialize..."
 sleep 25
 
+echo "[6/7] Extracting seed database..."
+gunzip -c "$SEED_ARCHIVE" > "$SEED_SQL"
+
 # === RESTORE DATABASE ===
-echo "[6/7] Restoring database..."
-docker exec -i ihomis-db \
-  mysql -u${DB_USER} -p${DB_PASS} ${DB_NAME} < $OLDPWD/$SQL_FILE
+echo "[7/7] Restoring database..."
+docker exec -i ihomis-db mysql \
+  -uroot -p"$MYSQL_ROOT_PASSWORD" \
+  --skip-definer "$DB_NAME" < "$SEED_SQL"
+
+rm -f "$SEED_SQL"
 
 # === DONE ===
 echo "======================================"

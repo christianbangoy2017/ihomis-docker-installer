@@ -2,6 +2,9 @@
 hospital_dbo_*.sql
 backup_*.sql
 
+# Allow ONLY the seed archive
+!db/hospital_dbo_seed.zip
+
 # SSL keys and certs
 ssl/*.key
 ssl/*.crt
