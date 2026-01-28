@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   app:
-    build: ./app
+    image: christianbangoy2017/ihomis-app:php7.4
     container_name: ihomis-app
     ports:
       - "8080:80"

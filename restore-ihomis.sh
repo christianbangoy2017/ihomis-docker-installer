@@ -8,14 +8,14 @@ echo "======================================"
 # === CONFIG ===
 BASE_DIR="/opt/ihomis"
 IMAGE="christianbangoy2017/ihomis-app:php7.4"
+
 DB_NAME="hospital_dbo"
 DB_USER="doh"
 DB_PASS="doh123456"
-#SQL_FILE="hospital_dbo_seed.sql"
+MYSQL_ROOT_PASSWORD="r00t"
 
 SEED_ARCHIVE="db/hospital_dbo_seed.zip"
 SEED_SQL="/tmp/hospital_dbo_seed.sql"
-
 
 # === CHECKS ===
 command -v docker >/dev/null 2>&1 || {
@@ -28,17 +28,16 @@ command -v docker compose >/dev/null 2>&1 || {
   exit 1
 }
 
-if [ ! -f "$SQL_FILE" ]; then
-  echo "Database dump $SQL_FILE not found. Aborting."
+if [ ! -f "$SEED_ARCHIVE" ]; then
+  echo "Seed archive $SEED_ARCHIVE not found. Aborting."
   exit 1
 fi
 
 # === PREPARE DIRECTORIES ===
 echo "[1/7] Creating directory structure..."
-sudo mkdir -p $BASE_DIR/app/{php,bootstrap}
-sudo mkdir -p $BASE_DIR/ssl
-sudo mkdir -p $BASE_DIR/db/data
-sudo chown -R $USER:$USER $BASE_DIR
+mkdir -p $BASE_DIR/app/{php,bootstrap}
+mkdir -p $BASE_DIR/ssl
+mkdir -p $BASE_DIR/db/data
 
 # === COPY FILES ===
 echo "[2/7] Copying configuration files..."
@@ -58,10 +57,11 @@ docker compose up -d
 
 # === WAIT FOR MYSQL ===
 echo "[5/7] Waiting for MySQL to initialize..."
-sleep 25
+sleep 30
 
+# === EXTRACT SEED ===
 echo "[6/7] Extracting seed database..."
-gunzip -c "$SEED_ARCHIVE" > "$SEED_SQL"
+unzip -c "$OLDPWD/$SEED_ARCHIVE" > "$SEED_SQL"
 
 # === RESTORE DATABASE ===
 echo "[7/7] Restoring database..."
@@ -71,9 +71,9 @@ docker exec -i ihomis-db mysql \
 
 rm -f "$SEED_SQL"
 
-# === DONE ===
 echo "======================================"
 echo " Restore completed successfully"
 echo "======================================"
 echo "Access iHOMIS at:"
 echo "https://<SERVER-IP>:8443"
+
