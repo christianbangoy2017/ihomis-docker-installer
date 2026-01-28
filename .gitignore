@@ -1,0 +1,18 @@
+# Production backups (never commit)
+hospital_dbo_*.sql
+backup_*.sql
+
+# SSL keys and certs
+ssl/*.key
+ssl/*.crt
+
+# Docker volumes
+db/data/
+
+# Environment secrets
+.env
+*.env
+
+# OS junk
+.DS_Store
+Thumbs.db
