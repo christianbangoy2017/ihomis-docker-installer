@@ -17,6 +17,13 @@ MYSQL_ROOT_PASSWORD="r00t"
 SEED_ARCHIVE="db/hospital_dbo_seed.zip"
 SEED_SQL="/tmp/hospital_dbo_seed.sql"
 
+
+SSL_DIR="ssl"
+SSL_KEY="$SSL_DIR/ihomis.key"
+SSL_CRT="$SSL_DIR/ihomis.crt"
+
+
+
 # === CHECKS ===
 command -v docker >/dev/null 2>&1 || {
   echo "Docker is not installed. Aborting."
@@ -38,6 +45,29 @@ echo "[1/7] Creating directory structure..."
 mkdir -p $BASE_DIR/app/{php,bootstrap}
 mkdir -p $BASE_DIR/ssl
 mkdir -p $BASE_DIR/db/data
+
+echo "[SSL] Checking SSL certificates..."
+
+if [ ! -f "$SSL_KEY" ] || [ ! -f "$SSL_CRT" ]; then
+  echo "[SSL] SSL certificates not found. Generating self-signed certificate..."
+
+  mkdir -p "$SSL_DIR"
+
+  openssl req -x509 -nodes -days 3650 \
+    -newkey rsa:2048 \
+    -keyout "$SSL_KEY" \
+    -out "$SSL_CRT" \
+    -subj "/C=PH/ST=Davao/L=Davao/O=Hospital/OU=IT/CN=$(hostname -I | awk '{print $1}')"
+
+  chmod 600 "$SSL_KEY"
+  chmod 644 "$SSL_CRT"
+
+  echo "[SSL] Self-signed SSL certificate generated."
+else
+  echo "[SSL] Existing SSL certificates found. Skipping generation."
+fi
+
+
 
 # === COPY FILES ===
 echo "[2/7] Copying configuration files..."
