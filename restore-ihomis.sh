@@ -18,7 +18,7 @@ APP_ZIP="ihomis-plus.zip"
 APP_DIR="$BASE_DIR/app/ihomis-plus"
 
 DB_ZIP="hospital_dbo.zip"
-SEED_SQL="/tmp/hospital_dbo_seed.sql"
+SEED_SQL="/tmp/hospital_dbo.sql"
 
 SSL_DIR="$BASE_DIR/ssl"
 SSL_KEY="$SSL_DIR/ihomis.key"
@@ -119,15 +119,28 @@ docker compose up -d
 # =========================
 echo "[5/7] Waiting for MySQL to be ready..."
 
-until docker exec ihomis-db \
+until sudo docker exec it ihomis-db \
   mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; do
   sleep 5
 done
 
 # =========================
+# ADD FOLDER PERMISSONS
+# =========================
+echo "[6/7] Adding Folder Permissions..."
+
+
+
+sudo docker exec -it ihomis-app mkdir -p /var/www/html/application/ci_sessions
+sudo docker exec -it ihomis-app chown -R www-data:www-data /var/www/html/application/ci_sessions
+sudo docker exec -it ihomis-app chmod 755 /var/www/html/application/ci_sessions
+
+
+
+# =========================
 # RESTORE DATABASE
 # =========================
-echo "[6/7] Restoring database..."
+echo "[7/7] Restoring database..."
 
 unzip -p "$OLDPWD/$DB_ZIP" > "$SEED_SQL"
 
@@ -139,9 +152,6 @@ rm -f "$SEED_SQL"
 
 
 
-sudo docker exec -it ihomis-app mkdir -p /var/www/html/application/ci_sessions
-sudo docker exec -it ihomis-app chown -R www-data:www-data /var/www/html/application/ci_sessions
-sudo docker exec -it ihomis-app chmod 755 /var/www/html/application/ci_sessions
 
 
 # =========================
