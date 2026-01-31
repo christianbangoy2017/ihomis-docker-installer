@@ -137,6 +137,13 @@ docker exec -i ihomis-db mysql \
 
 rm -f "$SEED_SQL"
 
+
+
+sudo docker exec -it ihomis-app mkdir -p /var/www/html/application/ci_sessions
+sudo docker exec -it ihomis-app chown -R www-data:www-data /var/www/html/application/ci_sessions
+sudo docker exec -it ihomis-app chmod 755 /var/www/html/application/ci_sessions
+
+
 # =========================
 # DONE
 # =========================
