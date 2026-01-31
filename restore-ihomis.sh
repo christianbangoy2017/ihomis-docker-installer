@@ -2,56 +2,64 @@
 set -e
 
 echo "======================================"
-echo " iHOMIS Plus – Docker Restore Script"
+echo " iHOMIS Plus – Docker Install & Restore"
 echo "======================================"
 
-# === CONFIG ===
+# =========================
+# CONFIG
+# =========================
 BASE_DIR="/opt/ihomis"
 IMAGE="christianbangoy2017/ihomis-app:php7.4"
 
 DB_NAME="hospital_dbo"
-DB_USER="doh"
-DB_PASS="doh123456"
 MYSQL_ROOT_PASSWORD="r00t"
 
-SEED_ARCHIVE="db/hospital_dbo_seed.zip"
+APP_ZIP="ihomis-plus.zip"
+APP_DIR="$BASE_DIR/app/ihomis-plus"
+
+DB_ZIP="hospital_dbo.zip"
 SEED_SQL="/tmp/hospital_dbo_seed.sql"
 
-
-SSL_DIR="ssl"
+SSL_DIR="$BASE_DIR/ssl"
 SSL_KEY="$SSL_DIR/ihomis.key"
 SSL_CRT="$SSL_DIR/ihomis.crt"
 
-
-
-# === CHECKS ===
+# =========================
+# CHECKS
+# =========================
 command -v docker >/dev/null 2>&1 || {
-  echo "Docker is not installed. Aborting."
+  echo "❌ Docker is not installed. Aborting."
   exit 1
 }
 
 command -v docker compose >/dev/null 2>&1 || {
-  echo "docker compose plugin not found. Aborting."
+  echo "❌ docker compose plugin not found. Aborting."
   exit 1
 }
 
-if [ ! -f "$SEED_ARCHIVE" ]; then
-  echo "Seed archive $SEED_ARCHIVE not found. Aborting."
-  exit 1
-fi
+for f in "$APP_ZIP" "$DB_ZIP" docker-compose.yml; do
+  if [ ! -f "$f" ]; then
+    echo "❌ Required file '$f' not found. Aborting."
+    exit 1
+  fi
+done
 
-# === PREPARE DIRECTORIES ===
+# =========================
+# PREPARE DIRECTORIES
+# =========================
 echo "[1/7] Creating directory structure..."
-mkdir -p $BASE_DIR/app/{php,bootstrap}
-mkdir -p $BASE_DIR/ssl
-mkdir -p $BASE_DIR/db/data
+mkdir -p "$BASE_DIR/app/php" \
+         "$BASE_DIR/app/bootstrap" \
+         "$BASE_DIR/db/data" \
+         "$SSL_DIR"
 
+# =========================
+# SSL SETUP
+# =========================
 echo "[SSL] Checking SSL certificates..."
 
 if [ ! -f "$SSL_KEY" ] || [ ! -f "$SSL_CRT" ]; then
-  echo "[SSL] SSL certificates not found. Generating self-signed certificate..."
-
-  mkdir -p "$SSL_DIR"
+  echo "[SSL] Generating self-signed certificate..."
 
   openssl req -x509 -nodes -days 3650 \
     -newkey rsa:2048 \
@@ -62,48 +70,79 @@ if [ ! -f "$SSL_KEY" ] || [ ! -f "$SSL_CRT" ]; then
   chmod 600 "$SSL_KEY"
   chmod 644 "$SSL_CRT"
 
-  echo "[SSL] Self-signed SSL certificate generated."
+  echo "[SSL] SSL generated."
 else
-  echo "[SSL] Existing SSL certificates found. Skipping generation."
+  echo "[SSL] Existing SSL found. Skipping."
 fi
 
+# =========================
+# EXTRACT WEB APPLICATION
+# =========================
+echo "[2/7] Preparing ihomis-plus application..."
 
+if [ ! -d "$APP_DIR" ]; then
+  echo "  → Extracting ihomis-plus.zip"
+  unzip -q "$APP_ZIP" -d "$BASE_DIR/app"
+else
+  echo "  → ihomis-plus already exists. Skipping extraction."
+fi
 
-# === COPY FILES ===
-echo "[2/7] Copying configuration files..."
-cp -r ssl/*        $BASE_DIR/ssl/
-cp -r php/*        $BASE_DIR/app/php/
-cp -r bootstrap/*  $BASE_DIR/app/bootstrap/
-cp docker-compose.yml $BASE_DIR/
+# =========================
+# COPY OPTIONAL CONFIG FILES
+# =========================
+echo "[3/7] Copying optional configuration files..."
 
-# === PULL IMAGE ===
-echo "[3/7] Pulling Docker image..."
-docker pull $IMAGE
+if [ -d "php" ] && [ "$(ls -A php 2>/dev/null)" ]; then
+  cp -r php/* "$BASE_DIR/app/php/"
+else
+  echo "  ⚠️  php folder not present – skipping"
+fi
 
-# === START CONTAINERS ===
-echo "[4/7] Starting containers..."
-cd $BASE_DIR
+if [ -d "bootstrap" ] && [ "$(ls -A bootstrap 2>/dev/null)" ]; then
+  cp -r bootstrap/* "$BASE_DIR/app/bootstrap/"
+else
+  echo "  ⚠️  bootstrap folder not present – skipping"
+fi
+
+# =========================
+# DOCKER COMPOSE
+# =========================
+echo "[4/7] Deploying Docker containers..."
+cp docker-compose.yml "$BASE_DIR/"
+cd "$BASE_DIR"
+
+docker pull "$IMAGE"
 docker compose up -d
 
-# === WAIT FOR MYSQL ===
-echo "[5/7] Waiting for MySQL to initialize..."
-sleep 30
+# =========================
+# WAIT FOR MYSQL
+# =========================
+echo "[5/7] Waiting for MySQL to be ready..."
 
-# === EXTRACT SEED ===
-echo "[6/7] Extracting seed database..."
-unzip -c "$OLDPWD/$SEED_ARCHIVE" > "$SEED_SQL"
+until docker exec ihomis-db \
+  mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; do
+  sleep 5
+done
 
-# === RESTORE DATABASE ===
-echo "[7/7] Restoring database..."
+# =========================
+# RESTORE DATABASE
+# =========================
+echo "[6/7] Restoring database..."
+
+unzip -p "$OLDPWD/$DB_ZIP" > "$SEED_SQL"
+
 docker exec -i ihomis-db mysql \
   -uroot -p"$MYSQL_ROOT_PASSWORD" \
   --skip-definer "$DB_NAME" < "$SEED_SQL"
 
 rm -f "$SEED_SQL"
 
+# =========================
+# DONE
+# =========================
 echo "======================================"
-echo " Restore completed successfully"
+echo " ✅ iHOMIS Plus installed successfully"
 echo "======================================"
-echo "Access iHOMIS at:"
+echo "Access the system at:"
 echo "https://<SERVER-IP>:8443"
 
