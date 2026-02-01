@@ -119,7 +119,7 @@ docker compose up -d
 # =========================
 echo "[5/7] Waiting for MySQL to be ready..."
 
-until sudo docker exec it ihomis-db \
+until sudo docker exec -it ihomis-db \
   mysqladmin ping -uroot -p"$MYSQL_ROOT_PASSWORD" --silent; do
   sleep 5
 done
@@ -144,7 +144,7 @@ echo "[7/7] Restoring database..."
 
 unzip -p "$OLDPWD/$DB_ZIP" > "$SEED_SQL"
 
-docker exec -i ihomis-db mysql \
+sudo docker exec -it ihomis-db mysql \
   -uroot -p"$MYSQL_ROOT_PASSWORD" \
   --skip-definer "$DB_NAME" < "$SEED_SQL"
 
