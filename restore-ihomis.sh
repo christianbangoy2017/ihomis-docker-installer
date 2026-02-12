@@ -136,6 +136,10 @@ sudo docker exec -it ihomis-app chown -R www-data:www-data /var/www/html/applica
 sudo docker exec -it ihomis-app chmod 755 /var/www/html/application/ci_sessions
 
 
+sudo docker exec ihomis-app mkdir -p /var/www/html/upload
+sudo docker exec ihomis-app chown -R www-data:www-data /var/www/html/upload
+sudo docker exec ihomis-app chmod -R 775 /var/www/html/upload
+
 
 # =========================
 # RESTORE DATABASE
