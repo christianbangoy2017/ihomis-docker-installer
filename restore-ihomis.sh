@@ -141,6 +141,19 @@ sudo docker exec ihomis-app chown -R www-data:www-data /var/www/html/upload
 sudo docker exec ihomis-app chmod -R 775 /var/www/html/upload
 
 
+echo "[6.5] Enabling TCPDF Support (Installing GD & Image Libraries)..."
+
+# Install necessary libraries for PDF generation (GD, FreeType, JPEG support)
+sudo docker exec -u root ihomis-app apt-get update
+sudo docker exec -u root ihomis-app apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev
+sudo docker exec -u root ihomis-app docker-php-ext-configure gd --with-freetype --with-jpeg
+sudo docker exec -u root ihomis-app docker-php-ext-install gd
+
+# Restart the app container to apply PHP changes
+sudo docker restart ihomis-app
+
+
+
 # =========================
 # RESTORE DATABASE
 # =========================
