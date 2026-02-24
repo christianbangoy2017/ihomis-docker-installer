@@ -29,4 +29,5 @@ services:
       MYSQL_PASSWORD: doh123456
     volumes:
       - ./db/data:/var/lib/mysql
+      - ./mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf
     restart: unless-stopped
