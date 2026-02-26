@@ -140,6 +140,13 @@ sudo docker exec ihomis-app mkdir -p /var/www/html/upload
 sudo docker exec ihomis-app chown -R www-data:www-data /var/www/html/upload
 sudo docker exec ihomis-app chmod -R 775 /var/www/html/upload
 
+sudo docker exec ihomis-app mkdir -p /var/www/html/upload/laboratory
+sudo docker exec ihomis-app mkdir -p /var/www/html/upload/radiology
+sudo docker exec ihomis-app chown -R www-data:www-data /var/www/html/upload/laboratory
+sudo docker exec ihomis-app chown -R www-data:www-data /var/www/html/upload/radiology
+sudo docker exec ihomis-app chmod -R 775 /var/www/html/upload/laboratory
+sudo docker exec ihomis-app chmod -R 775 /var/www/html/upload/radiology
+
 
 echo "[6.5] Enabling TCPDF Support (Installing GD & Image Libraries)..."
 
